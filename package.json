@@ -1,6 +1,6 @@
 {
   "name": "json-make-ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Make typescript object from JSON configuration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,6 +13,9 @@
     "url": "git+https://github.com/lesslucifer/make-ts.git"
   },
   "keywords": [
+    "json",
+    "json-make",
+    "json-make-ts",
     "make",
     "recipe",
     "configuration",
