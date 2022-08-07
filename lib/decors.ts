@@ -1,32 +1,36 @@
 import "reflect-metadata";
 
-import { RecipeDefinitionError } from "./define";
+import { ClassType, RecipeDefinitionError } from "./define";
 import { FieldRecipeDesc, IRecipeOptions, Recipe } from "./recipe";
 
-export function RecipeModel(name?: string, factory?: () => any) {
-    return (target: Function) => {
+export interface IRecipeDesc {
+    target: Function,
+    recipe: Recipe
+}
+
+export function RecipeModel(factory?: () => any, name?: string) {
+    return (target: ClassType) => {
         const recipe = new Recipe()
-        recipe.factory = factory ?? (() => target())
+        recipe.name = name ?? target.name
+        recipe.factory = factory ?? (() => new target())
         
-        const recipes: any[] = Reflect.getMetadata('recipes', RecipeModel) || [];
+        const recipes: IRecipeDesc[] = Reflect.getMetadata('recipes', RecipeModel) || [];
         const dupRecipe = recipes.find(r => r.target === target)
         if (dupRecipe) throw new RecipeDefinitionError(`Cannot set recipe for target ${target.name}; Duplicated`)
-        recipes.push({target: target, name: name ?? target.name, recipe});
+        recipes.push({target, recipe});
         Reflect.defineMetadata('recipes', recipes, RecipeModel);
     }
 }
 
-RecipeModel.get = () => Reflect.getMetadata('recipes', RecipeModel) as Recipe[]
-
-export const modifyRecipeMetadata = (target: Function, f: (r: Recipe) => any) => {
+export const modifyRecipeMetadata = (target: ClassType, f: (r: Recipe) => any) => {
     const recipes: any[] = Reflect.getMetadata('recipes', RecipeModel) || [];
     const r = recipes.find(r => r.target === target)
     if (!r) throw new RecipeDefinitionError(`Cannot update recipe options for target ${target.name}; Not found`)
-    return f(r)
+    return f(r.recipe)
 }
 
 export const ModifyRecipe = (f: (r: Recipe) => void) => {
-    return (target: Function) => {
+    return (target: ClassType) => {
         modifyRecipeMetadata(target, f)
     }
 }
@@ -39,29 +43,39 @@ export const RecipeValidation = (validation: (target: any) => boolean) => {
     return ModifyRecipe(r => r.validation = validation)
 }
 
-export const RecipeField = (desc: Partial<FieldRecipeDesc>) => {
+export const RecipeField = (desc?: Partial<FieldRecipeDesc>) => {
     return (target: any, key: string) => {
-        modifyRecipeMetadata(target, r => {
-            const dupField = r.fields.find(f => f.fieldName === key)
-            if (dupField) throw new RecipeDefinitionError(`Cannot add field ${key} for recipe ${target.name}; Duplicated`)
-            r.fields.push({
-                ...desc,
-                fieldName: key
-            })
+        const recipeFields: FieldRecipeDesc[] = Reflect.getMetadata('recipe:fields', target) || [];
+        const dupField = recipeFields.find(f => f.fieldName === key)
+        if (dupField) throw new RecipeDefinitionError(`Cannot add field ${key} for recipe ${target.name}; Duplicated`)
+        const designType = Reflect.getMetadata('design:type', target, key)
+        recipeFields.push({
+            type: () => designType,
+            ...(desc ?? {}),
+            fieldName: key
         })
+        Reflect.defineMetadata('recipe:fields', recipeFields, target);
     }
 }
 
-export const modifyRecipeFieldMetadata = (target: Function, key: string, f: (field: FieldRecipeDesc) => any) => {
-    return modifyRecipeMetadata(target, r => {
-        const field = r.fields.find(f => f.fieldName === key)
-        if (!field) throw new RecipeDefinitionError(`Cannot update field ${key} for recipe ${target.name}; Not found`)
-       return  f(field)
-    })
+export const modifyRecipeFieldMetadata = (target: any, key: string, f: (field: FieldRecipeDesc) => any) => {
+    const recipeFields: FieldRecipeDesc[] = Reflect.getMetadata('recipe:fields', target) || [];
+    const field = recipeFields.find(f => f.fieldName === key)
+    if (!field) throw new RecipeDefinitionError(`Cannot update field ${key} for recipe ${target.name}; Not found`)
+    return f(field)
 }
 
 export const ModifyRecipeField = (f: (field: FieldRecipeDesc) => any) => {
-    return (target: Function, key: string) => {
+    return (target: any, key: string) => {
         modifyRecipeFieldMetadata(target, key, f)
     }
+}
+
+RecipeModel.get = () => {
+    const recipes = Reflect.getMetadata('recipes', RecipeModel) as IRecipeDesc[]
+    return recipes.map(r => {
+        const recipe = r.recipe
+        recipe.fields = Reflect.getMetadata('recipe:fields', r.target.prototype) || []
+        return recipe
+    })
 }

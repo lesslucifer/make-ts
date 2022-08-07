@@ -3,8 +3,8 @@ import { ClassType, IMakeErrorContext, InvalidMakeConfigError, JSONObject, MakeC
 import { MakeUtils } from './utils';
 
 export interface IMakeContext extends IMakeErrorContext {
-    make: Make
-    path: string[]
+    make?: Make
+    path?: string[]
     preferredType?: ClassType
     typeCheck?: boolean
 }
@@ -21,12 +21,11 @@ export class Make {
         this.makers.set(type, maker)
     }
 
-    make(config: MakeConfig, context?: Partial<IMakeContext>) {
-        const ctx = {
-            make: this,
-            path: [],
-            ...(context ?? {})
-        }
+    make(config: MakeConfig, context?: IMakeContext) {
+        const ctx = context ?? {}
+        ctx.make = ctx.make ?? this
+        ctx.path = ctx.path ?? []
+
         const result = this.makeWithContext(config, ctx)
 
         if (ctx.typeCheck === true && ctx.preferredType !== undefined && !this.typeMatcher(ctx.preferredType, result)) {
@@ -63,10 +62,6 @@ export class Make {
         return MakeUtils.primitiveParse(config, ctx.preferredType)
 
         // throw new InvalidMakeConfigError(ctx, `Cannot get recipe for preferred type = ${ctx.preferredType.name} or the config type mismatch; found ${typeof config}`)
-    }
-
-    getMaker(name: string) {
-        return this.makers.get(name)
     }
 
     parseConfig(config: MakeConfig) {

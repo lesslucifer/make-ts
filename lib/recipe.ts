@@ -12,15 +12,16 @@ export interface IRecipeOptions {
 }
 
 export interface FieldRecipeDesc {
-    fieldName: string
-    required?: boolean
+    fieldName: string,
+    type: () => ClassType
+    typeCheck?: boolean
     configName?: string
     make?: Maker
-    type?: () => ClassType
     validation?: FieldRecipeValidation
 }
 
 export class Recipe<T = any> {
+    name: string
     factory: () => T
     fields: FieldRecipeDesc[] = []
     options: IRecipeOptions = {}
@@ -32,7 +33,6 @@ export class Recipe<T = any> {
 
     getRecipe(make: Make, f: FieldRecipeDesc) {
         if (f.make) return f.make
-        if (f.type && make.getMaker(f.type().name)) return make.getMaker(f.type().name)
         return make.make.bind(make)
     }
 
@@ -43,12 +43,19 @@ export class Recipe<T = any> {
         for (const f of this.fields) {
             const cfName = f.configName ?? f.fieldName
             const recipe = this.getRecipe(ctx.make, f)
-            const value = recipe(config[cfName], ctx.make.fieldContext(cfName, {
-                
-            }))
-            if (value === undefined && !f.required) throw new MakingError(ctx, `Recipe: ${f.fieldName} cannot be empty`)
-            if (f.validation && !f.validation(f, value)) throw new MakingError(ctx, `Recipe: Validation failed for ${f.fieldName}`)
-            target[f.fieldName] = value
+            const fContext = ctx.make.fieldContext(cfName, {
+                preferredType: f.type(),
+                typeCheck: f.typeCheck
+            })
+
+            if (_.get(config, cfName) !== undefined) {
+                const value = recipe(config?.[cfName], fContext)
+                if (value !== undefined) {
+                    target[f.fieldName] = value
+                }
+            }
+
+            if (f.validation && !f.validation(f, target[f.fieldName])) throw new MakingError(ctx, `Recipe: Validation failed for ${f.fieldName}`)
         }
 
         if (this.validation && !this.validation(target)) throw new MakingError(ctx, `Recipe: Validation failed for the target object`)

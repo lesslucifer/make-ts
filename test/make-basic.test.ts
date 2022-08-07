@@ -1,4 +1,3 @@
-import 'mocha';
 import { InvalidMakeConfigError } from '../lib/define';
 import { Make } from '../lib/make';
 

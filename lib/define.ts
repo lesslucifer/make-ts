@@ -1,10 +1,10 @@
 import _ = require("lodash");
 
 export interface IMakeErrorContext {
-    path: string[]
+    path?: string[]
 }
 
-export type ClassType = { new(...args: any[]): any; };
+export type ClassType = { new(...args: any[]): any; }
 
 export type JSONObject = {
     [x: string]: JSONValue

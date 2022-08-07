@@ -1,4 +1,3 @@
-import 'mocha';
 import { MakingTypeCheckError } from '../lib/define';
 import { Make } from '../lib/make';
 
