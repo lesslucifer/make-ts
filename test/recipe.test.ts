@@ -47,26 +47,30 @@ describe("# Recipe", () => {
     let make = new MakeRepository();
 
     beforeAll(() => {
-        RecipeModel.get().forEach(r => {
-            make.add(r.name, r.recipe())
-        })
+        RecipeModel.addToMakeRepo(make, A)
+        RecipeModel.addToMakeRepo(make, AA)
+        RecipeModel.addToMakeRepo(make, C)
+        RecipeModel.addToMakeRepo(make, B)
+        RecipeModel.addToMakeRepo(make, FactoryClass)
+        RecipeModel.addToMakeRepo(make, ValidatedClass)
+        RecipeModel.addToMakeRepo(make, ValidatedFieldClass)
     })
 
     test('make simple recipe class should be ok with valid config', () => {
         const res = new A()
         res.data = '100'
-        expect(make.make({$$type: 'A', data: '100'})).toEqual(res)
+        expect(make.newContext().make({$$type: 'A', data: '100'})).toEqual(res)
     })
 
     test('make simple recipe class should fail with invalid config', () => {
-        expect(() => make.make({$$type: 'C', data: 'abc'})).toThrow(MakingTypeCheckError)
+        expect(() => make.newContext().make({$$type: 'C', data: 'abc'})).toThrow(MakingTypeCheckError)
     })
 
     test('make nested recipe class should be ok with valid config', () => {
         const res = new B()
         res.a = new A()
         res.a.data = 100
-        expect(make.make({$$type: 'B', a: {
+        expect(make.newContext().make({$$type: 'B', a: {
             data: 100
         }})).toEqual(res)
     })
@@ -75,14 +79,14 @@ describe("# Recipe", () => {
         const res = new B()
         res.a = new AA()
         res.a.data = 100
-        expect(make.make({$$type: 'B', a: {
+        expect(make.newContext().make({$$type: 'B', a: {
             $$type: 'AA',
             data: 100
         }})).toEqual(res)
     })
 
     test('make nested recipe class class should fail ok invalid class', () => {
-        expect(() => make.make({$$type: 'B', a: {
+        expect(() => make.newContext().make({$$type: 'B', a: {
             $$type: 'C',
             data: 100
         }})).toThrow(MakingTypeCheckError)
@@ -96,7 +100,7 @@ describe("# Recipe", () => {
         res.data.a.data.a = new A()
         res.data.a.data.a.data = new C()
         res.data.a.data.a.data.data = 100
-        expect(make.make({data: {$$type: 'B', a: {
+        expect(make.newContext().make({data: {$$type: 'B', a: {
             $$type: 'AA',
             data: {
                 $$type: 'B',
@@ -116,7 +120,7 @@ describe("# Recipe", () => {
         res.data.a.data.a = new A()
         res.data.a.data.a.data = new C()
         res.data.a.data.a.data.data = 100
-        expect(() => make.make({data: {$$type: 'B', a: {
+        expect(() => make.newContext().make({data: {$$type: 'B', a: {
             $$type: 'AA',
             data: {
                 $$type: 'B',
@@ -132,27 +136,27 @@ describe("# Recipe", () => {
         const res = new FactoryClass()
         res.a = new A()
         res.a.data = 1000
-        expect(make.make({$$type: 'FactoryClass'})).toEqual(res)
+        expect(make.newContext().make({$$type: 'FactoryClass'})).toEqual(res)
     })
 
     test('field validation should be ok with valid config', () => {
         const res = new ValidatedFieldClass()
         res.a = new A()
         res.a.data = 1000
-        expect(make.make({$$type: 'ValidatedClass', a: { data: 1000 }})).toEqual(res)
+        expect(make.newContext().make({$$type: 'ValidatedClass', a: { data: 1000 }})).toEqual(res)
     })
 
     test('field validation should fail with invalid config', () => {
-        expect(() => make.make({$$type: 'ValidatedFieldClass', a: { data: 10 }})).toThrow(MakingError)
+        expect(() => make.newContext().make({$$type: 'ValidatedFieldClass', a: { data: 10 }})).toThrow(MakingError)
     })
 
     test('class validation should be ok with valid config', () => {
         const res = new ValidatedClass()
         res.a = new A()
-        expect(make.make({$$type: 'ValidatedClass', a: {}})).toEqual(res)
+        expect(make.newContext().make({$$type: 'ValidatedClass', a: {}})).toEqual(res)
     })
 
     test('field validation should fail with invalid config', () => {
-        expect(() => make.make({$$type: 'ValidatedClass'})).toThrow(MakingError)
+        expect(() => make.newContext().make({$$type: 'ValidatedClass'})).toThrow(MakingError)
     })
 });

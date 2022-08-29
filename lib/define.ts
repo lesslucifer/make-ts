@@ -4,7 +4,7 @@ export interface IMakeErrorContext {
     Path?: string[]
 }
 
-export type ClassType = { new(...args: any[]): any; }
+export type ClassType<T = any> = { new(...args: any[]): T; }
 
 export type JSONObject = {
     [x: string]: JSONValue

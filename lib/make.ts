@@ -28,7 +28,7 @@ export class MakeContext implements IMakeErrorContext {
             this.path.push(opts.fieldName)
         }
         try {
-            const result = this.makeObject(config, opts)
+            const result = this.makeObject(config, opts)                
             if (opts?.skipTypeCheck !== true && opts?.preferredType !== undefined && !this.repo.typeMatcher(opts.preferredType, result)) {
                 throw new MakingTypeCheckError(this, opts?.preferredType, result)
             }
@@ -80,12 +80,7 @@ export class MakeRepository {
         return this.makers.get(type)
     }
 
-    make(config: MakeConfig, opts?: IMakeOptions) {
-        const ctx = new MakeContext(this)
-        const res = ctx.make(config, opts)
-        if (!_.isEmpty(ctx.Error)) throw ctx.Error
-        return res
-    }
+    newContext() { return new MakeContext(this) }
 }
 
 export const MakeGlobal = new MakeRepository()

@@ -24,13 +24,15 @@ export class Recipe<T = any> {
     factory: () => T
     fields: FieldRecipeDesc[] = []
     options: IRecipeOptions = {}
+    customMaker?: Maker<T>
     validation?: (target: T) => boolean
 
-    recipe(): Maker {
+    recipe(): Maker<T> {
+        if (this.customMaker) return this.customMaker
         return this.make.bind(this)
     }
 
-    getRecipe(f: FieldRecipeDesc): Maker<any> {
+    private getRecipe(f: FieldRecipeDesc): Maker<any> {
         if (f.make) return f.make
         return (ctx, cf, opts) => ctx.make(cf, opts)
     }

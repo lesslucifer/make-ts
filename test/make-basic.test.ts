@@ -18,14 +18,14 @@ describe("# Make basic", () => {
     })
 
     test('create single object should be ok', async () => {
-        expect(make.make({ $$type: 'A', data: 'hello' })).toEqual({
+        expect(make.newContext().make({ $$type: 'A', data: 'hello' })).toEqual({
             'class': 'A',
             data: { data: 'hello' }
         })
     })
 
     test('create nested object should be ok', async () => {
-        expect(make.make({
+        expect(make.newContext().make({
             $$type: 'B', field: {
                 $$type: 'B',
                 field: {
@@ -46,11 +46,11 @@ describe("# Make basic", () => {
     })
 
     test('not found maker should throw error', async () => {
-        expect(() => make.make({ $$type: 'C' })).toThrow(InvalidMakeConfigError)
+        expect(() => make.newContext().make({ $$type: 'C' })).toThrow(InvalidMakeConfigError)
     })
 
     test('not found maker in nested should throw error', async () => {
-        expect(() => make.make({
+        expect(() => make.newContext().make({
             $$type: 'B', field: {
                 $$type: 'B',
                 field: {
@@ -61,40 +61,40 @@ describe("# Make basic", () => {
     })
 
     test('using primtestive type should be ok', async () => {
-        expect(make.make({ $$type: 'A', value: 100, svalue: 'hello', bValue: false, nValue: null })).toEqual({
+        expect(make.newContext().make({ $$type: 'A', value: 100, svalue: 'hello', bValue: false, nValue: null })).toEqual({
             'class': 'A',
             data: { value: 100, svalue: 'hello', bValue: false, nValue: null }
         })
     })
 
     test('using array type should be ok', async () => {
-        expect(make.make({ $$type: 'A', array: ['A', 10, false, null] })).toEqual({
+        expect(make.newContext().make({ $$type: 'A', array: ['A', 10, false, null] })).toEqual({
             'class': 'A',
             data: { array: ['A', 10, false, null] }
         })
     })
 
     test('using nested primtestive type should be ok', async () => {
-        expect(make.make({ $$type: 'B', field: 100 })).toEqual({
+        expect(make.newContext().make({ $$type: 'B', field: 100 })).toEqual({
             'class': 'B',
             field: 100
         })
-        expect(make.make({ $$type: 'B', field: 'ABC' })).toEqual({
+        expect(make.newContext().make({ $$type: 'B', field: 'ABC' })).toEqual({
             'class': 'B',
             field: 'ABC'
         })
-        expect(make.make({ $$type: 'B', field: false })).toEqual({
+        expect(make.newContext().make({ $$type: 'B', field: false })).toEqual({
             'class': 'B',
             field: false
         })
-        expect(make.make({ $$type: 'B', field: null })).toEqual({
+        expect(make.newContext().make({ $$type: 'B', field: null })).toEqual({
             'class': 'B',
             field: null
         })
     })
 
     test('using nested array type should be ok', async () => {
-        expect(make.make({ $$type: 'B', field: [100, 'A', false, null] })).toEqual({
+        expect(make.newContext().make({ $$type: 'B', field: [100, 'A', false, null] })).toEqual({
             'class': 'B',
             field: [100, 'A', false, null]
         })

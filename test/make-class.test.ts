@@ -58,18 +58,18 @@ describe("# Make class", () => {
     test('make simple class should be ok with valid config', () => {
         const res = new A()
         res.data = 100
-        expect(make.make({$$type: 'A', data: 100})).toEqual(res)
+        expect(make.newContext().make({$$type: 'A', data: 100})).toEqual(res)
     })
 
     test('make simple class should fail with invalid config', () => {
-        expect(() => make.make({$$type: 'C', data: 'abc'})).toThrow(MakingTypeCheckError)
+        expect(() => make.newContext().make({$$type: 'C', data: 'abc'})).toThrow(MakingTypeCheckError)
     })
 
     test('make nested class should be ok with valid config', () => {
         const res = new B()
         res.a = new A()
         res.a.data = 100
-        expect(make.make({$$type: 'B', a: {
+        expect(make.newContext().make({$$type: 'B', a: {
             data: 100
         }})).toEqual(res)
     })
@@ -78,14 +78,14 @@ describe("# Make class", () => {
         const res = new B()
         res.a = new AA()
         res.a.data = 100
-        expect(make.make({$$type: 'B', a: {
+        expect(make.newContext().make({$$type: 'B', a: {
             $$type: 'AA',
             data: 100
         }})).toEqual(res)
     })
 
     test('make nested class class should fail ok invalid class', () => {
-        expect(() => make.make({$$type: 'B', a: {
+        expect(() => make.newContext().make({$$type: 'B', a: {
             $$type: 'C',
             data: 100
         }})).toThrow(MakingTypeCheckError)
@@ -99,7 +99,7 @@ describe("# Make class", () => {
         res.data.a.data.a = new A()
         res.data.a.data.a.data = new C()
         res.data.a.data.a.data.data = 100
-        expect(make.make({data: {$$type: 'B', a: {
+        expect(make.newContext().make({data: {$$type: 'B', a: {
             $$type: 'AA',
             data: {
                 $$type: 'B',
@@ -119,7 +119,7 @@ describe("# Make class", () => {
         res.data.a.data.a = new A()
         res.data.a.data.a.data = new C()
         res.data.a.data.a.data.data = 100
-        expect(() => make.make({data: {$$type: 'B', a: {
+        expect(() => make.newContext().make({data: {$$type: 'B', a: {
             $$type: 'AA',
             data: {
                 $$type: 'B',
