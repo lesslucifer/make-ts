@@ -2,64 +2,59 @@ import _ = require('lodash')
 import { ClassType, IMakeErrorContext, InvalidMakeConfigError, JSONObject, MakeConfig, MakingTypeCheckError } from './define';
 import { MakeUtils } from './utils';
 
-export interface IMakeContext extends IMakeErrorContext {
-    make?: Make
-    path?: string[]
+export interface IMakeOptions {
+    fieldName?: string
     preferredType?: ClassType
-    typeCheck?: boolean
+    skipTypeCheck?: boolean
 }
 
 export interface Maker<T = any> {
-    (config: MakeConfig, ctx: IMakeContext): T
+    (ctx: MakeContext, config: MakeConfig, opts: IMakeOptions): T
 }
 
-export class Make {
-    private makers = new Map<string, Maker> ()
-    public typeMatcher: (t: any, v: any) => boolean = MakeUtils.isTypeMatched.bind(MakeUtils)
+export class MakeContext implements IMakeErrorContext {
+    private path: string[] = []
+    private error: Error
 
-    add(type: string, maker: Maker) {
-        this.makers.set(type, maker)
+    constructor(private repo: MakeRepository) {
     }
 
-    make(config: MakeConfig, context?: IMakeContext) {
-        const ctx = context ?? {}
-        ctx.make = ctx.make ?? this
-        ctx.path = ctx.path ?? []
+    get Repository() { return this.repo }
+    get Path() { return this.path }
+    get Error() { return this.error }
 
-        const result = this.makeWithContext(config, ctx)
-
-        if (ctx.typeCheck === true && ctx.preferredType !== undefined && !this.typeMatcher(ctx.preferredType, result)) {
-            throw new MakingTypeCheckError(ctx, context.preferredType, result)
+    make(config: MakeConfig, opts?: IMakeOptions) {
+        if (opts?.fieldName) {
+            this.path.push(opts.fieldName)
         }
-
-        return result
-    }
-
-    fieldMake(config: MakeConfig, fieldName: string, ctx?: Partial<IMakeContext>) {
-        return this.make(config?.[fieldName], this.fieldContext(fieldName, ctx))
-    }
-
-    fieldContext(fieldName: string, ctx?: Partial<IMakeContext>): IMakeContext {
-        return {
-            make: this,
-            path: [...(ctx?.path ?? []), fieldName],
-            ...(ctx ?? {})
+        try {
+            const result = this.makeObject(config, opts)
+            if (opts?.skipTypeCheck !== true && opts?.preferredType !== undefined && !this.repo.typeMatcher(opts.preferredType, result)) {
+                throw new MakingTypeCheckError(this, opts?.preferredType, result)
+            }
+    
+            return result
+        }
+        finally {
+            if (opts?.fieldName) {
+                this.path.pop()
+            }
         }
     }
 
-    private makeWithContext(config: MakeConfig, ctx: IMakeContext) {
+    private makeObject(config: MakeConfig, opts?: IMakeOptions) {
         if (_.isObject(config) && _.isString(config['$$type'])) {
-            const maker = this.makers.get(config['$$type'])
-            if (!maker) throw new InvalidMakeConfigError(ctx, `Cannot get recipe for $$type = ${_.get(config, '$$type')}`)
-            return maker(_.omit(config as JSONObject, '$$type'), ctx)
+            const maker = this.repo.getMaker(config['$$type'])
+            if (!maker) throw new InvalidMakeConfigError(this, `Cannot get recipe for $$type = ${_.get(config, '$$type')}`)
+            return maker(this, _.omit(config as JSONObject, '$$type'), opts)
         }
         
-        if (ctx.preferredType && this.makers.has(ctx.preferredType.name)) {
-            const maker = this.makers.get(ctx.preferredType.name)
-            return maker(config, ctx)
+        if (opts?.preferredType && this.repo.hasMaker(opts.preferredType.name)) {
+            const maker = this.repo.getMaker(opts.preferredType.name)
+            return maker(this, config, opts)
         }
 
-        return MakeUtils.primitiveParse(config, ctx.preferredType)
+        return MakeUtils.primitiveParse(config, opts?.preferredType)
 
         // throw new InvalidMakeConfigError(ctx, `Cannot get recipe for preferred type = ${ctx.preferredType.name} or the config type mismatch; found ${typeof config}`)
     }
@@ -69,5 +64,29 @@ export class Make {
     }
 }
 
-export const MakeGlobal = new Make()
+export class MakeRepository {
+    private makers = new Map<string, Maker> ()
+    public typeMatcher: (t: any, v: any) => boolean = MakeUtils.isTypeMatched.bind(MakeUtils)
+
+    add(type: string, maker: Maker) {
+        this.makers.set(type, maker)
+    }
+
+    hasMaker(type: string) {
+        return this.makers.has(type)
+    }
+
+    getMaker(type: string) {
+        return this.makers.get(type)
+    }
+
+    make(config: MakeConfig, opts?: IMakeOptions) {
+        const ctx = new MakeContext(this)
+        const res = ctx.make(config, opts)
+        if (!_.isEmpty(ctx.Error)) throw ctx.Error
+        return res
+    }
+}
+
+export const MakeGlobal = new MakeRepository()
 export default MakeGlobal

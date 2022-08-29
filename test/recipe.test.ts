@@ -1,10 +1,10 @@
-import { MakeConfig, MakingError, MakingTypeCheckError } from '../lib/define';
-import { IMakeContext, Make } from '../lib/make';
-import { RecipeField, RecipeModel, RecipeValidation } from '../lib/decors'
+import { RecipeField, RecipeModel, RecipeValidation } from '../lib/decors';
+import { MakingError, MakingTypeCheckError } from '../lib/define';
+import { MakeRepository } from '../lib/make';
 
 @RecipeModel()
 class A {
-    @RecipeField()
+    @RecipeField({ skipTypeCheck: true })
     data: any
 }
 
@@ -14,19 +14,19 @@ class AA extends A {
 
 @RecipeModel()
 class C {
-    @RecipeField( { typeCheck: true } )
+    @RecipeField()
     data: number
 }
 
 @RecipeModel()
 class B {
-    @RecipeField({ typeCheck: true })
+    @RecipeField()
     a: A
 }
 
 @RecipeModel(() => {const v = new FactoryClass(); v.a = new A(); v.a.data = 1000; return v})
 class FactoryClass {
-    @RecipeField({ typeCheck: true })
+    @RecipeField()
     a: A
 }
 
@@ -39,12 +39,12 @@ class ValidatedFieldClass {
 @RecipeValidation(v => v.a != null)
 @RecipeModel()
 class ValidatedClass {
-    @RecipeField()
+    @RecipeField({ skipTypeCheck: true })
     a: A
 }
 
 describe("# Recipe", () => {
-    let make = new Make();
+    let make = new MakeRepository();
 
     beforeAll(() => {
         RecipeModel.get().forEach(r => {

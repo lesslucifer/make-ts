@@ -1,19 +1,18 @@
 import { InvalidMakeConfigError } from '../lib/define';
-import { Make } from '../lib/make';
+import { MakeRepository } from '../lib/make';
 
 describe("# Make basic", () => {
-    let make = new Make();
+    let make = new MakeRepository();
 
     beforeAll(() => {
-        make.add('A', (config, ctx) => ({
+        make.add('A', (repo, config, ctx) => ({
             'class': 'A',
             data: config
         }))
-        make.add('B', (config, ctx) => ({
+        make.add('B', (repo, config, ctx) => ({
             'class': 'B',
-            'field': ctx.make.make(config?.['field'], {
-                make: ctx.make,
-                path: [...ctx.path, 'field'],
+            'field': repo.make(config?.['field'], {
+                fieldName: 'field'
             })
         }))
     })

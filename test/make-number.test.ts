@@ -1,20 +1,22 @@
 import { MakingTypeCheckError } from '../lib/define';
-import { Make } from '../lib/make';
+import { MakeRepository } from '../lib/make';
 
 describe("# Make number", () => {
-    let make = new Make();
+    let make = new MakeRepository();
 
     beforeAll(() => {
-        make.add('CheckedPrimitiveNumber', (config, ctx) => ({
-            data: ctx.make.make(config?.['data'], ctx.make.fieldContext('data', {
-                preferredType: Number,
-                typeCheck: true
-            }))
-        }))
-        make.add('UncheckedPrimitiveNumber', (config, ctx) => ({
-            data: ctx.make.make(config?.['data'], ctx.make.fieldContext('data', {
+        make.add('CheckedPrimitiveNumber', (ctx, config) => ({
+            data: ctx.make(config?.['data'], {
+                fieldName: 'data',
                 preferredType: Number
-            }))
+            })
+        }))
+        make.add('UncheckedPrimitiveNumber', (ctx, config) => ({
+            data: ctx.make(config?.['data'], {
+                fieldName: 'data',
+                preferredType: Number,
+                skipTypeCheck: true
+            })
         }))
     })
 

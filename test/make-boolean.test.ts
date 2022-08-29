@@ -1,20 +1,22 @@
 import { MakingTypeCheckError } from '../lib/define';
-import { Make } from '../lib/make';
+import { MakeRepository } from '../lib/make';
 
 describe("# Make boolean", () => {
-    let make = new Make();
+    let make = new MakeRepository();
 
     beforeAll(() => {
-        make.add('CheckedPrimitiveBoolean', (config, ctx) => ({
-            data: ctx.make.make(config?.['data'], ctx.make.fieldContext('data', {
-                preferredType: Boolean,
-                typeCheck: true
-            }))
-        }))
-        make.add('UncheckedPrimitiveBoolean', (config, ctx) => ({
-            data: ctx.make.make(config?.['data'], ctx.make.fieldContext('data', {
+        make.add('CheckedPrimitiveBoolean', (ctx, config) => ({
+            data: ctx.make(config?.['data'], {
+                fieldName: 'data',
                 preferredType: Boolean
-            }))
+            })
+        }))
+        make.add('UncheckedPrimitiveBoolean', (ctx, config) => ({
+            data: ctx.make(config?.['data'], {
+                fieldName: 'data',
+                preferredType: Boolean,
+                skipTypeCheck: true
+            })
         }))
     })
 

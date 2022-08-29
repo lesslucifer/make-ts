@@ -1,20 +1,22 @@
 import { MakingTypeCheckError } from '../lib/define';
-import { Make } from '../lib/make';
+import { MakeRepository } from '../lib/make';
 
 describe("# Make string", () => {
-    let make = new Make();
+    let make = new MakeRepository();
 
     beforeAll(() => {
-        make.add('CheckedPrimitiveString', (config, ctx) => ({
-            data: ctx.make.make(config?.['data'], ctx.make.fieldContext('data', {
-                preferredType: String,
-                typeCheck: true
-            }))
-        }))
-        make.add('UncheckedPrimitiveString', (config, ctx) => ({
-            data: ctx.make.make(config?.['data'], ctx.make.fieldContext('data', {
+        make.add('CheckedPrimitiveString', (ctx, config, opts) => ({
+            data: ctx.make(config?.['data'], {
+                fieldName: 'data',
                 preferredType: String
-            }))
+            })
+        }))
+        make.add('UncheckedPrimitiveString', (repo, config, ctx) => ({
+            data: repo.make(config?.['data'], {
+                fieldName: 'data',
+                preferredType: String,
+                skipTypeCheck: true
+            })
         }))
     })
 

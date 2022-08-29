@@ -1,20 +1,20 @@
 import { MakeConfig, MakingTypeCheckError } from '../lib/define';
-import { IMakeContext, Make } from '../lib/make';
+import { IMakeOptions, MakeContext, MakeRepository } from '../lib/make';
 
 class A {
     data: any
 
-    static make(config: MakeConfig, ctx: IMakeContext) {
+    static make(ctx: MakeContext, config: MakeConfig, opts: IMakeOptions) {
         const a = new A()
-        a.data = ctx.make.fieldMake(config, 'data')
+        a.data = ctx.make(config?.['data'], {fieldName: 'data'})
         return a
     }
 }
 
 class AA extends A {
-    static make(config: MakeConfig, ctx: IMakeContext) {
+    static make(ctx: MakeContext, config: MakeConfig, opts: IMakeOptions) {
         const a = new AA()
-        a.data = ctx.make.fieldMake(config, 'data')
+        a.data = ctx.make(config?.['data'], {fieldName: 'data'})
         return a
     }
 }
@@ -22,11 +22,11 @@ class AA extends A {
 class C {
     data: any
 
-    static make(config: MakeConfig, ctx: IMakeContext) {
+    static make(ctx: MakeContext, config: MakeConfig, opts: IMakeOptions) {
         const c = new C()
-        c.data = ctx.make.fieldMake(config, 'data', {
-            preferredType: Number,
-            typeCheck: true
+        c.data = ctx.make(config?.['data'], {
+            fieldName: 'data',
+            preferredType: Number
         })
         return c
     }
@@ -35,18 +35,18 @@ class C {
 class B {
     a: A
 
-    static make(config: MakeConfig, ctx: IMakeContext) {
+    static make(ctx: MakeContext, config: MakeConfig, opts: IMakeOptions) {
         const b = new B()
-        b.a = ctx.make.fieldMake(config, 'a', {
-            preferredType: A,
-            typeCheck: true
+        b.a = ctx.make(config?.['a'], {
+            fieldName: 'a',
+            preferredType: A
         })
         return b
     }
 }
 
 describe("# Make class", () => {
-    let make = new Make();
+    let make = new MakeRepository();
 
     beforeAll(() => {
         make.add(A.name, A.make.bind(A))

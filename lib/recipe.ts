@@ -1,7 +1,6 @@
 import _ = require("lodash")
-import { createTextChangeRange } from "typescript"
 import { ClassType, MakeConfig, MakingError } from "./define"
-import { IMakeContext, Make, Maker } from "./make"
+import { IMakeOptions, MakeContext, Maker } from "./make"
 
 export interface FieldRecipeValidation {
     (field: FieldRecipeDesc, value: any): boolean
@@ -14,7 +13,7 @@ export interface IRecipeOptions {
 export interface FieldRecipeDesc {
     fieldName: string,
     type: () => ClassType
-    typeCheck?: boolean
+    skipTypeCheck?: boolean
     configName?: string
     make?: Maker
     validation?: FieldRecipeValidation
@@ -31,25 +30,25 @@ export class Recipe<T = any> {
         return this.make.bind(this)
     }
 
-    getRecipe(make: Make, f: FieldRecipeDesc) {
+    getRecipe(f: FieldRecipeDesc): Maker<any> {
         if (f.make) return f.make
-        return make.make.bind(make)
+        return (ctx, cf, opts) => ctx.make(cf, opts)
     }
 
-    make(config: MakeConfig, ctx: IMakeContext): T {
+    make(ctx: MakeContext, config: MakeConfig, opts?: IMakeOptions): T {
         if (!this.factory) throw new MakingError(ctx, `Recipe: no factory`)
         const target = this.factory()
 
         for (const f of this.fields) {
             const cfName = f.configName ?? f.fieldName
-            const recipe = this.getRecipe(ctx.make, f)
-            const fContext = ctx.make.fieldContext(cfName, {
-                preferredType: f.type(),
-                typeCheck: f.typeCheck
-            })
+            const recipe = this.getRecipe(f)
 
             if (_.get(config, cfName) !== undefined) {
-                const value = recipe(config?.[cfName], fContext)
+                const value = recipe(ctx, config?.[cfName], {
+                    fieldName: cfName,
+                    preferredType: f.type(),
+                    skipTypeCheck : f.skipTypeCheck === true || !!f.validation
+                })
                 if (value !== undefined) {
                     target[f.fieldName] = value
                 }
