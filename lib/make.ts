@@ -28,7 +28,7 @@ export class MakeContext implements IMakeErrorContext {
             this.path.push(opts.fieldName)
         }
         try {
-            const result = this.makeObject(config, opts)                
+            const result = this.makeObject(config, opts)   
             if (opts?.skipTypeCheck !== true && opts?.preferredType !== undefined && !this.repo.typeMatcher(opts.preferredType, result)) {
                 throw new MakingTypeCheckError(this, opts?.preferredType, result)
             }

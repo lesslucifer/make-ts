@@ -1,8 +1,9 @@
 import _ = require("lodash");
 import "reflect-metadata";
+import { createTextChangeRange } from "typescript";
 
-import { ClassType, RecipeDefinitionError } from "./define";
-import { Maker, MakeRepository } from "./make";
+import { ClassType, InvalidMakeConfigError, JSONObject, MakeConfig, RecipeDefinitionError } from "./define";
+import { IMakeOptions, MakeContext, Maker, MakeRepository } from "./make";
 import { FieldRecipeDesc, IRecipeOptions, Recipe } from "./recipe";
 
 export interface IRecipeDesc {
@@ -55,12 +56,29 @@ export const RecipeField = (desc?: Partial<FieldRecipeDesc>) => {
         const dupField = recipeFields.find(f => f.fieldName === key)
         if (dupField) throw new RecipeDefinitionError(`Cannot add field ${key} for recipe ${target.name}; Duplicated`)
         const designType = Reflect.getMetadata('design:type', target, key)
-        recipeFields.push({
+        const fDesc = {
             type: () => designType,
             ...(desc ?? {}),
             fieldName: key
-        })
+        }
+        if (designType === Array) {
+            fDesc.make = makeForArray(fDesc)
+        }
+
+        recipeFields.push(fDesc)
         Reflect.defineMetadata('recipe:fields', recipeFields, target);
+    }
+}
+
+export const makeForArray = (f: FieldRecipeDesc): Maker => {
+    const itemMaker = f.make ?? ((ctx: MakeContext, cf: MakeConfig, opts: IMakeOptions) => ctx.make(cf, opts))
+    return (ctx, cf, opts) => {
+        if (!_.isArray(cf)) throw new InvalidMakeConfigError(ctx, `Expect an array`)
+        return cf.map((e, i) => itemMaker(ctx, e, {
+            preferredType: f.type(),
+            skipTypeCheck : f.skipTypeCheck === true || !!f.validation,
+            fieldName: [f.fieldName, i].join('.'),
+        }))
     }
 }
 
