@@ -5,11 +5,11 @@ describe("# Make basic", () => {
     let make = new MakeRepository();
 
     beforeAll(() => {
-        make.add('A', (repo, config, ctx) => ({
+        make.addMaker('A', (repo, config, ctx) => ({
             'class': 'A',
             data: config
         }))
-        make.add('B', (repo, config, ctx) => ({
+        make.addMaker('B', (repo, config, ctx) => ({
             'class': 'B',
             'field': repo.make(config?.['field'], {
                 fieldName: 'field'

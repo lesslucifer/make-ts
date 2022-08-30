@@ -114,5 +114,5 @@ RecipeModel.get = (type: ClassType) => {
 RecipeModel.addToMakeRepo = (repo: MakeRepository, type: ClassType) => {
     const recipe = RecipeModel.get(type)
     if (!recipe) throw new RecipeDefinitionError(`Cannot add recipe of type ${type.name} to make repository; Not found`)
-    repo.add(type.name, recipe.recipe())
+    repo.addMaker(type.name, recipe.recipe())
 }

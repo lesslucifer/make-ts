@@ -43,6 +43,19 @@ export class MakeContext implements IMakeErrorContext {
     }
 
     private makeObject(config: MakeConfig, opts?: IMakeOptions) {
+        if (_.isString(config) && config.startsWith('$#') && this.repo.hasRef(config.substring('$#'.length))) {
+            return this.repo.getRef(config.substring('$#'.length))
+        }
+
+        if (_.isObject(config) && !_.isEmpty(config['$$template'])) {
+            const templates: string[] = _.isArray(config['$$template']) ? config['$$template'] : [config['$$template']]
+            const notFoundTemplateIdx = templates.findIndex(t => !this.repo.hasTemplate(t))
+            if (notFoundTemplateIdx >= 0) throw new InvalidMakeConfigError(this, `Invalid $$template config. Cannot find template ${templates[notFoundTemplateIdx]}`)
+            if (templates.length > 0) {
+                config = _.merge({}, ...templates.map(t => this.repo.getTemplate(t)), config)
+            }
+        }
+
         if (_.isObject(config) && _.isString(config['$$type'])) {
             const maker = this.repo.getMaker(config['$$type'])
             if (!maker) throw new InvalidMakeConfigError(this, `Cannot get recipe for $$type = ${_.get(config, '$$type')}`)
@@ -66,9 +79,12 @@ export class MakeContext implements IMakeErrorContext {
 
 export class MakeRepository {
     private makers = new Map<string, Maker> ()
+    private templates = new Map<string, MakeConfig>()
+    private refs = new Map<string, any>()
+
     public typeMatcher: (t: any, v: any) => boolean = MakeUtils.isTypeMatched.bind(MakeUtils)
 
-    add(type: string, maker: Maker) {
+    addMaker(type: string, maker: Maker) {
         this.makers.set(type, maker)
     }
 
@@ -78,6 +94,30 @@ export class MakeRepository {
 
     getMaker(type: string) {
         return this.makers.get(type)
+    }
+
+    addTemplate(name: string, template: MakeConfig) {
+        return this.templates.set(name, template)
+    }
+
+    hasTemplate(type: string) {
+        return this.templates.has(type)
+    }
+
+    getTemplate(type: string) {
+        return this.templates.get(type)
+    }
+
+    addRef(name: string, ref: any) {
+        return this.refs.set(name, ref)
+    }
+
+    hasRef(name: string) {
+        return this.refs.has(name)
+    }
+
+    getRef(name: string) {
+        return this.refs.get(name)
     }
 
     newContext() { return new MakeContext(this) }

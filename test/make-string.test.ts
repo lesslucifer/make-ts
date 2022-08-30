@@ -5,13 +5,13 @@ describe("# Make string", () => {
     let make = new MakeRepository();
 
     beforeAll(() => {
-        make.add('CheckedPrimitiveString', (ctx, config, opts) => ({
+        make.addMaker('CheckedPrimitiveString', (ctx, config, opts) => ({
             data: ctx.make(config?.['data'], {
                 fieldName: 'data',
                 preferredType: String
             })
         }))
-        make.add('UncheckedPrimitiveString', (repo, config, ctx) => ({
+        make.addMaker('UncheckedPrimitiveString', (repo, config, ctx) => ({
             data: repo.make(config?.['data'], {
                 fieldName: 'data',
                 preferredType: String,

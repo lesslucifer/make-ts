@@ -49,10 +49,10 @@ describe("# Make class", () => {
     let make = new MakeRepository();
 
     beforeAll(() => {
-        make.add(A.name, A.make.bind(A))
-        make.add(AA.name, AA.make.bind(A))
-        make.add(B.name, B.make.bind(A))
-        make.add(C.name, C.make.bind(A))
+        make.addMaker(A.name, A.make.bind(A))
+        make.addMaker(AA.name, AA.make.bind(A))
+        make.addMaker(B.name, B.make.bind(A))
+        make.addMaker(C.name, C.make.bind(A))
     })
 
     test('make simple class should be ok with valid config', () => {

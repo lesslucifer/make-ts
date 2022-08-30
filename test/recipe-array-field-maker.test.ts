@@ -54,7 +54,7 @@ class CheckedArrayFieldSkipTypeCheck {
     constructor(arr?: any[]) { this.arr = arr }
 }
 
-describe("# Recipe Custom Maker", () => {
+describe("# Recipe Array Maker", () => {
     let make = new MakeRepository();
 
     beforeAll(() => {

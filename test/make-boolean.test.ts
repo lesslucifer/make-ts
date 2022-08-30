@@ -5,13 +5,13 @@ describe("# Make boolean", () => {
     let make = new MakeRepository();
 
     beforeAll(() => {
-        make.add('CheckedPrimitiveBoolean', (ctx, config) => ({
+        make.addMaker('CheckedPrimitiveBoolean', (ctx, config) => ({
             data: ctx.make(config?.['data'], {
                 fieldName: 'data',
                 preferredType: Boolean
             })
         }))
-        make.add('UncheckedPrimitiveBoolean', (ctx, config) => ({
+        make.addMaker('UncheckedPrimitiveBoolean', (ctx, config) => ({
             data: ctx.make(config?.['data'], {
                 fieldName: 'data',
                 preferredType: Boolean,

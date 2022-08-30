@@ -20,6 +20,7 @@ export interface FieldRecipeDesc {
 }
 
 export class Recipe<T = any> {
+    target: ClassType<T>
     name: string
     factory: () => T
     fields: FieldRecipeDesc[] = []
@@ -28,7 +29,7 @@ export class Recipe<T = any> {
     validation?: (target: T) => boolean
 
     recipe(): Maker<T> {
-        if (this.customMaker) return this.customMaker
+        if (this.customMaker) return this.customMaker.bind(this.target)
         return this.make.bind(this)
     }
 

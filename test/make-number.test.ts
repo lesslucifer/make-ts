@@ -5,13 +5,13 @@ describe("# Make number", () => {
     let make = new MakeRepository();
 
     beforeAll(() => {
-        make.add('CheckedPrimitiveNumber', (ctx, config) => ({
+        make.addMaker('CheckedPrimitiveNumber', (ctx, config) => ({
             data: ctx.make(config?.['data'], {
                 fieldName: 'data',
                 preferredType: Number
             })
         }))
-        make.add('UncheckedPrimitiveNumber', (ctx, config) => ({
+        make.addMaker('UncheckedPrimitiveNumber', (ctx, config) => ({
             data: ctx.make(config?.['data'], {
                 fieldName: 'data',
                 preferredType: Number,
