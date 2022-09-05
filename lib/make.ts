@@ -6,6 +6,8 @@ export interface IMakeOptions {
     fieldName?: string
     preferredType?: ClassType
     skipTypeCheck?: boolean
+    optional?: boolean
+    defaultValue?: any
 }
 
 export interface Maker<T = any> {
@@ -28,9 +30,14 @@ export class MakeContext implements IMakeErrorContext {
             this.path.push(opts.fieldName)
         }
         try {
-            const result = this.makeObject(config, opts)   
-            if (opts?.skipTypeCheck !== true && opts?.preferredType !== undefined && !this.repo.typeMatcher(opts.preferredType, result)) {
-                throw new MakingTypeCheckError(this, opts?.preferredType, result)
+            const result = MakeUtils.select(this.makeObject(config, opts), opts?.defaultValue)
+            if (opts?.skipTypeCheck !== true) {
+                if (opts?.optional !== true && _.isNil(result)) {
+                    throw new MakingTypeCheckError(this, 'not null or undefined', result)
+                }
+                else if (opts?.preferredType !== undefined && !this.repo.typeMatcher(opts.preferredType, result)) {
+                    throw new MakingTypeCheckError(this, opts?.preferredType?.name, typeof result)
+                }
             }
     
             return result
@@ -43,6 +50,8 @@ export class MakeContext implements IMakeErrorContext {
     }
 
     private makeObject(config: MakeConfig, opts?: IMakeOptions) {
+        if (config === undefined) return undefined
+        
         if (_.isString(config) && config.startsWith('$#') && this.repo.hasRef(config.substring('$#'.length))) {
             return this.repo.getRef(config.substring('$#'.length))
         }

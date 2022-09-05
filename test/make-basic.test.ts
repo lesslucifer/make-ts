@@ -12,7 +12,8 @@ describe("# Make basic", () => {
         make.addMaker('B', (repo, config, ctx) => ({
             'class': 'B',
             'field': repo.make(config?.['field'], {
-                fieldName: 'field'
+                fieldName: 'field',
+                optional: true
             })
         }))
     })
@@ -87,7 +88,7 @@ describe("# Make basic", () => {
             'class': 'B',
             field: false
         })
-        expect(make.newContext().make({ $$type: 'B', field: null })).toEqual({
+        expect(make.newContext().make({ $$type: 'B', field: null }, )).toEqual({
             'class': 'B',
             field: null
         })

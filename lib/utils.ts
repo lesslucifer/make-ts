@@ -68,4 +68,8 @@ export class MakeUtils {
         
         return value;
     }
+
+    static select(...values: any[]) {
+        return values.find(v => v !== undefined)
+    }
 }

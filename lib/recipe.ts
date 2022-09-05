@@ -14,6 +14,8 @@ export interface FieldRecipeDesc {
     fieldName: string,
     type: () => ClassType
     skipTypeCheck?: boolean
+    optional?: boolean
+    defaultValue?: () => any
     configName?: string
     make?: Maker
     validation?: FieldRecipeValidation
@@ -46,15 +48,15 @@ export class Recipe<T = any> {
             const cfName = f.configName ?? f.fieldName
             const recipe = this.getRecipe(f)
 
-            if (_.get(config, cfName) !== undefined) {
-                const value = recipe(ctx, config?.[cfName], {
-                    fieldName: cfName,
-                    preferredType: f.type(),
-                    skipTypeCheck : f.skipTypeCheck === true || !!f.validation
-                })
-                if (value !== undefined) {
-                    target[f.fieldName] = value
-                }
+            const value = recipe(ctx, config?.[cfName], {
+                fieldName: cfName,
+                preferredType: f.type(),
+                skipTypeCheck : f.skipTypeCheck === true || !!f.validation,
+                optional: f.optional,
+                defaultValue: f.defaultValue ? f.defaultValue() : target[f.fieldName]
+            })
+            if (value !== undefined) {
+                target[f.fieldName] = value
             }
 
             if (f.validation && !f.validation(f, target[f.fieldName])) throw new MakingError(ctx, `Recipe: Validation failed for ${f.fieldName}`)
