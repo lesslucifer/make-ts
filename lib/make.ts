@@ -1,5 +1,5 @@
 import _ = require('lodash')
-import { ClassType, IMakeErrorContext, InvalidMakeConfigError, JSONObject, MakeConfig, MakingTypeCheckError } from './define';
+import { ClassType, IMakeErrorContext, InvalidMakeConfigError, JSONObject, JSONValue, MakeConfig, MakingTypeCheckError } from './define';
 import { MakeUtils } from './utils';
 
 export interface IMakeOptions {
@@ -57,11 +57,14 @@ export class MakeContext implements IMakeErrorContext {
         }
 
         if (_.isObject(config) && !_.isEmpty(config['$$template'])) {
-            const templates: string[] = _.isArray(config['$$template']) ? config['$$template'] : [config['$$template']]
-            const notFoundTemplateIdx = templates.findIndex(t => !this.repo.hasTemplate(t))
-            if (notFoundTemplateIdx >= 0) throw new InvalidMakeConfigError(this, `Invalid $$template config. Cannot find template ${templates[notFoundTemplateIdx]}`)
+            const templates: IMakeTemplateConfig[] = _.isArray(config['$$template']) ? config['$$template'].map(t => this.parseTemplateConfig(t)) : [this.parseTemplateConfig(config['$$template'])]
+            const notFoundTemplateIdx = templates.findIndex(t => !this.repo.hasTemplate(t.name))
+            if (notFoundTemplateIdx >= 0) throw new InvalidMakeConfigError(this, `Invalid $$template config. Cannot find template ${templates[notFoundTemplateIdx].name}`)
             if (templates.length > 0) {
-                config = _.merge({}, ...templates.map(t => this.repo.getTemplate(t)), config)
+                // console.log(templates)
+                // console.log(templates.map(t => this.makeTemplate(t.placeholders, this.repo.getTemplate(t.name))))
+                config = _.merge({}, ...templates.map(t => this.makeTemplate(t.placeholders, this.repo.getTemplate(t.name))), _.omit(config, '$$template'))
+                // console.log(config)
             }
         }
 
@@ -81,9 +84,45 @@ export class MakeContext implements IMakeErrorContext {
         // throw new InvalidMakeConfigError(ctx, `Cannot get recipe for preferred type = ${ctx.preferredType.name} or the config type mismatch; found ${typeof config}`)
     }
 
+    // private makeTemplate(placeholders: _.Dictionary<any>, data: any) {
+    //     const res = this.makeTemplate2(placeholders, data)
+    //     console.log(`Make template: `, data, '=>', res)
+    //     return res
+    // }
+
+    private makeTemplate(placeholders: _.Dictionary<any>, data: any) {
+        if (_.isString(data) && data.startsWith('$$')) return _.get(placeholders, data.substring(2))
+        if (_.isArray(data)) return data.map(e => this.makeTemplate(placeholders, e))
+        if (_.isPlainObject(data)) {
+            if (data['$$placeholder'] !== undefined) {
+                return _.get(placeholders, data['$$placeholder']) ?? data['$$default']
+            }
+            return _.mapValues(data, v => this.makeTemplate(placeholders, v))
+        }
+        return data
+    }
+
+    private parseTemplateConfig(t: any): IMakeTemplateConfig {
+        if (_.isPlainObject(t)) {
+            const name = t.name
+            const placeholders = t.placeholders ?? {}
+            if (!_.isString(name)) throw new InvalidMakeConfigError(this, `Template config object must have name`)
+            if (!_.isObjectLike(placeholders)) throw new InvalidMakeConfigError(this, `Template config placeholders must be an object-like`)
+            return {
+                name, placeholders
+            }
+        }
+        return { name: t, placeholders: {} }
+    }
+
     parseConfig(config: MakeConfig) {
         return config
     }
+}
+
+export interface IMakeTemplateConfig {
+    name: string;
+    placeholders: _.Dictionary<JSONValue>
 }
 
 export class MakeRepository {

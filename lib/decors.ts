@@ -73,7 +73,8 @@ export const RecipeField = (desc?: Partial<FieldRecipeDesc>) => {
 export const makeForArray = (f: FieldRecipeDesc): Maker => {
     const itemMaker = f.make ?? ((ctx: MakeContext, cf: MakeConfig, opts: IMakeOptions) => ctx.make(cf, opts))
     return (ctx, cf, opts) => {
-        if (!_.isArray(cf)) throw new InvalidMakeConfigError(ctx, `Expect an array`)
+        if (_.isNil(cf)) return undefined
+        if (!_.isArray(cf)) throw new InvalidMakeConfigError(ctx, `Expect an array for field ${f.configName ?? f.fieldName}`)
         return cf.map((e, i) => itemMaker(ctx, e, {
             preferredType: f.type(),
             skipTypeCheck : f.skipTypeCheck === true || !!f.validation,
