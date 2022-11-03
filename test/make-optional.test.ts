@@ -1,11 +1,11 @@
-import { InvalidMakeConfigError, MakingTypeCheckError } from '../lib/define';
+import { MakingTypeCheckError } from '../lib/define';
 import { MakeRepository } from '../lib/make';
 
 describe("# Make optional", () => {
     let make = new MakeRepository();
 
     beforeAll(() => {
-        make.addMaker('SampleClass', (repo, config, ctx) => ({
+        make.addMaker('SampleClass', (repo, config) => ({
             'class': 'SampleClass',
             'optionalField': repo.make(config?.['optionalField'], {
                 fieldName: 'optionalField',

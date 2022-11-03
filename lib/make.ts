@@ -31,13 +31,12 @@ export class MakeContext implements IMakeErrorContext {
         }
         try {
             const result = MakeUtils.select(this.makeObject(config, opts), opts?.defaultValue)
-            if (opts?.skipTypeCheck !== true) {
-                if (opts?.optional !== true && _.isNil(result)) {
-                    throw new MakingTypeCheckError(this, 'not null or undefined', result)
-                }
-                else if (opts?.preferredType !== undefined && !this.repo.typeMatcher(opts.preferredType, result)) {
-                    throw new MakingTypeCheckError(this, opts?.preferredType?.name, typeof result)
-                }
+            if (opts?.skipTypeCheck === true) return result
+            if (opts?.optional === true && _.isNil(result)) return result
+            if (_.isNil(result)) throw new MakingTypeCheckError(this, 'not null or undefined', result)
+            
+            if (opts?.preferredType !== undefined && !this.repo.typeMatcher(opts.preferredType, result)) {
+                throw new MakingTypeCheckError(this, opts?.preferredType?.name, typeof result)
             }
     
             return result
@@ -63,7 +62,7 @@ export class MakeContext implements IMakeErrorContext {
             if (templates.length > 0) {
                 // console.log(templates)
                 // console.log(templates.map(t => this.makeTemplate(t.placeholders, this.repo.getTemplate(t.name))))
-                config = _.merge({}, ...templates.map(t => this.makeTemplate(t.placeholders, this.repo.getTemplate(t.name))), _.omit(config, '$$template'))
+                config = _.assign({}, ...templates.map(t => this.makeTemplate(t.placeholders, this.repo.getTemplate(t.name))), _.omit(config, '$$template'))
                 // console.log(config)
             }
         }
