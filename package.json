@@ -1,6 +1,6 @@
 {
   "name": "json-make-ts",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Make typescript object from JSON configuration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

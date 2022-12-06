@@ -48,13 +48,24 @@ export class MakeContext implements IMakeErrorContext {
         }
     }
 
-    private makeObject(config: MakeConfig, opts?: IMakeOptions) {
-        if (config === undefined) return undefined
+    resolveConfig(config: MakeConfig) {
+        if (_.isArray(config)) {
+            return config.map(e => this.resolveConfig(e))
+        }
+
+        if (_.isObject(config)) {
+            if (!_.isEmpty(config['$$template'])) return this.resolveConfig(this.parseTemplate(config))
+            return _.mapValues(config, (v: any) => this.resolveConfig(v))
+        }
         
         if (_.isString(config) && config.startsWith('$#') && this.repo.hasRef(config.substring('$#'.length))) {
             return this.repo.getRef(config.substring('$#'.length))
         }
 
+        return config
+    }
+
+    private parseTemplate(config: MakeConfig) {
         if (_.isObject(config) && !_.isEmpty(config['$$template'])) {
             const templates: IMakeTemplateConfig[] = _.isArray(config['$$template']) ? config['$$template'].map(t => this.parseTemplateConfig(t)) : [this.parseTemplateConfig(config['$$template'])]
             const notFoundTemplateIdx = templates.findIndex(t => !this.repo.hasTemplate(t.name))
@@ -62,9 +73,21 @@ export class MakeContext implements IMakeErrorContext {
             if (templates.length > 0) {
                 // console.log(templates)
                 // console.log(templates.map(t => this.makeTemplate(t.placeholders, this.repo.getTemplate(t.name))))
-                config = _.assign({}, ...templates.map(t => this.makeTemplate(t.placeholders, this.repo.getTemplate(t.name))), _.omit(config, '$$template'))
+                return _.assign({}, ...templates.map(t => this.parseTemplate(this.makeTemplate(t.placeholders, this.repo.getTemplate(t.name)))), _.omit(config, '$$template'))
                 // console.log(config)
             }
+        }
+
+        return config
+    }
+
+    private makeObject(config: MakeConfig, opts?: IMakeOptions) {
+        if (config === undefined) return undefined
+
+        config = this.parseTemplate(config)
+        
+        if (_.isString(config) && config.startsWith('$#') && this.repo.hasRef(config.substring('$#'.length))) {
+            return this.repo.getRef(config.substring('$#'.length))
         }
 
         if (_.isObject(config) && _.isString(config['$$type'])) {

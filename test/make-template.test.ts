@@ -71,4 +71,18 @@ describe("# Make with template", () => {
         make.addTemplate('A', {$$type: 'SimpleClass', data: 100})
         expect(make.newContext().make({$$template: 'A'}, { preferredType: SimpleClass2, skipTypeCheck: true })).toEqual(new SimpleClass(100))
     })
+
+    test('make object with template of template should be ok', () => {
+        make.addTemplate('A', {$$template: 'B'})
+        make.addTemplate('B', {$$type: 'SimpleClass', data: 100})
+        expect(make.newContext().make({$$template: 'A'})).toEqual(new SimpleClass(100))
+    })
+
+    test('make object with multi-level templates of template should be ok', () => {
+        make.addTemplate('A', {$$template: 'B'})
+        make.addTemplate('B', {$$template: 'C'})
+        make.addTemplate('C', {$$template: 'D'})
+        make.addTemplate('D', {$$type: 'SimpleClass', data: 100})
+        expect(make.newContext().make({$$template: 'A'})).toEqual(new SimpleClass(100))
+    })
 });
