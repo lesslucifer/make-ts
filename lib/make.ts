@@ -102,15 +102,7 @@ export class MakeContext implements IMakeErrorContext {
         }
 
         return MakeUtils.primitiveParse(config, opts?.preferredType)
-
-        // throw new InvalidMakeConfigError(ctx, `Cannot get recipe for preferred type = ${ctx.preferredType.name} or the config type mismatch; found ${typeof config}`)
     }
-
-    // private makeTemplate(placeholders: _.Dictionary<any>, data: any) {
-    //     const res = this.makeTemplate2(placeholders, data)
-    //     console.log(`Make template: `, data, '=>', res)
-    //     return res
-    // }
 
     private makeTemplate(placeholders: _.Dictionary<any>, data: any) {
         if (_.isString(data) && data.startsWith('$$')) return _.get(placeholders, data.substring(2))
