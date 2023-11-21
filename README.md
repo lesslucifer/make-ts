@@ -121,16 +121,93 @@ yarn add json-make-ts
 Discover the features of `json-make-ts` on your exciting journey! 🚀✨
 
 ## Data Validation
+**json-make-ts** goes beyond just transforming JSON configurations into JavaScript objects—it provides robust data validation to ensure that the input conforms to your expected structure.
 
 ### Primitives
 
+Validation for all primitive types comes built-in, requiring no additional setup. The library seamlessly handles the following primitive types:
+
+- String
+- Number
+- Boolean
+- Null / Undefined
+
 ### Associations
+
+**json-make-ts** seamlessly integrates with various association types. Take a look at this example:
+
+```typescript
+@RecipeModel()
+class BlogPost {
+    @RecipeField() title: string;
+    @RecipeField() content: string;
+    @RecipeField() author: User;
+}
+```
+
+In this scenario, the `author` field is expected to be an instance of the User type by default. If an invalid data type is provided, the library ensures robustness by throwing an error, helping you catch and address discrepancies in your data structure.
+
+If it's not possible to explicitly define the expected type of a field during its declaration, the use of [@RecipeField options](#field-options) provides a customizable solution for greater flexibility.
 
 ### Arrays
 
+As TypeScript lacks type information for generic types, specifying the expected element type of an array field can be achieved using `preferedType` in [**@RecipeField options**](#field-options) for type validation.
+
+```typescript
+@RecipeModel()
+class BlogPost {
+    // ...
+    @RecipeField({ preferedType: () => String })
+    categories: string[]
+
+    @RecipeField({ preferedType: () => User })
+    viewers: User[]
+}
+```
+
 ### Nested Objects
 
-### Field Options
+Unfortunately, nested object field type validation is not supported at the moment. If you still wish to utilize nested object fields, you can bypass type validation by using `skipTypeCheck` in [**@RecipeField options**](#field-options).
+
+```typescript
+@RecipeModel()
+class BlogPost {
+    @RecipeField({ skipTypeCheck: true })
+    metadata: {
+        link: string,
+        tags: string[]
+    }
+}
+```
+
+### Fields Options
+
+- **fieldName**: The name of the field, automatically set and generally shouldn't be changed unless you have a specific reason to do so.
+
+- **type**: A function specifying the type of the field. It can be set automatically, but explicit specification is available when needed.
+
+- **skipTypeCheck**: Boolean flag to skip the entire type validation process. Default is `false`.
+
+- **optional**: Boolean flag indicating whether the field accepts `null` or `undefined` as valid values. Default is `false`.
+
+- **defaultValue**: A factory function returning the default value if the input is `null` or `undefined`. This option overrides the `optional` flag.
+
+- **configName**: The field name in the JSON configuration that will be mapped to this field. The default is the same as the `fieldName`.
+
+- **make**: A custom factory function, allowing replacement of the entire conversion process for this field. More details are available at [Custom Factories](#custom-factories).
+
+- **validation**: Custom validation for a field, with the signature `(field: FieldRecipeDesc, value: any) => boolean`.
+
+These options provide a high level of customization for handling various aspects of field definition, validation, and conversion within **json-make-ts**.
+
+```typescript
+// This validate the format of email field and set the field to empty string if no data provided
+@RecipeField({
+  defaultValue: () => '',
+  validation: (desc, val) => !val || emailRegex.match(val)
+})
+email: string;
+```
 
 ### Custom factories
 
