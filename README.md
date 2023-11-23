@@ -194,7 +194,7 @@ class BlogPost {
 
 - **configName**: The field name in the JSON configuration that will be mapped to this field. The default is the same as the `fieldName`.
 
-- **make**: A custom factory function, allowing replacement of the entire conversion process for this field. More details are available at [Custom Factories](#custom-factories).
+- **make**: A custom factory function, allowing replacement the construction of this field's value. More details are available at [Field Custom Factory](#field-custom-factories).
 
 - **validation**: Custom validation for a field, with the signature `(field: FieldRecipeDesc, value: any) => boolean`.
 
@@ -209,88 +209,116 @@ These options provide a high level of customization for handling various aspects
 email: string;
 ```
 
-### Custom factories
+### Factory
 
-## Support other objects
+By default, object construction within **json-make-ts** is straightforward, utilizing the `new` operator. However, for more nuanced scenarios, custom factories provide a powerful tool for customization.
+
+#### Class Custom Factory
+
+You can apply a class custom factory by setting the first parameter of `@RecipeModel`, which then applies to all object constructions of that type. For example:
+
+```typescript
+@RecipeModel(() => ({
+    htmlContent: ''
+}))
+class BlogPost {
+    htmlContent: string;
+}
+```
+
+In this setup, a plain object is used instead of a new BlogPost instance whenever constructing data of type BlogPost.
+
+#### Field Custom Factory
+
+For field-specific customization, you can set the make parameter of @RecipeField, allowing you to construct the initial value for that field. Here's an example:
+
+Example: this will init the `author` field by the preferred type of `AdminUser` if the field `type` in the configuration is `ADMIN`. Otherwise it uses the default construction.
+```typescript
+class BlogPost {
+    @RecipeField({
+        make: (ctx, config) => config.type === 'ADMIN' ? ctx.make(config, { preferredType: AdminUser }) : ctx.make(config)
+    })
+    author: User
+}
+```
+
+In this example, the author field is initialized based on the preferred type of `AdminUser` if the field type in the configuration is set to 'ADMIN'. Otherwise, it uses the default construction.
+
+### Custom Object Construction
+
+In the examples above, we focused on using **json-make-ts** to generate objects that we explicitly defined. However, in practical scenarios, we often need to construct objects that are not declared by us. In such cases, custom object construction comes to the rescue.
+
+To achieve this, we can add a new factory function directly to the Repository. For instance:
+
+```typescript
+MakeGlobal.add(MongoConnection.name, (config) => {
+    const conn = new MongoConnection();
+    conn.connect();
+    return conn;
+});
+```
+
+In this example, a factory for the MongoConnection object is set up. It creates an instance from a pre-defined class and initializes the connection.
+
+Now, this custom factory can be used in other places:
+
+```typescript
+@RecipeModel()
+class AppConnection {
+    @RecipeField()
+    mongo: MongoConnection;
+}
+```
+
+In the AppConnection class, the mongo field is defined with the `@RecipeField` decorator, and it will utilize the custom factory we set up for `MongoConnection`.
 
 ## References
 
 ### MakeRepository
 
+The `MakeRepository` serves as the central hub for storing models and factories within **json-make-ts**. While the global instance named `MakeGlobal` is commonly used in most scenarios, the flexibility of the library allows for the creation of multiple repositories as needed.
+
+- **addMaker(type: string, maker: Maker):** Adds a custom maker function for a specific type to the repository.
+
+- **hasMaker(type: string):** Checks if the repository contains a custom maker function for a given type.
+
+- **getMaker(type: string):** Retrieves the custom maker function associated with a specific type from the repository.
+
+- **addTemplate(name: string, template: MakeConfig):** Adds a template configuration for a specified name to the repository.
+
+- **hasTemplate(type: string):** Checks if the repository contains a template configuration for a given name.
+
+- **getTemplate(type: string):** Retrieves the template configuration associated with a specific name from the repository.
+
+- **addRef(name: string, ref: any):** Adds a reference to an object / configuration with a given name to the repository.
+
+- **hasRef(name: string):** Checks if the repository contains a reference object with a specified name.
+
+- **getRef(name: string):** Retrieves the reference object associated with a specific name from the repository.
+
+- **newContext():** Creates and returns a new MakeContext(#makecontext) tied to this repository.
+
 ### MakeContext
 
-### Recipe
+The `MakeContext` contains the entire scenario of object creation. In simpler words, it serves as the orchestrator to transform JSON configurations into objects within a given scenario. It can be retrieved by using the `newContext` method from a repository.
 
-### Decorators
+- **Repository:** The make repository associated with the context.
 
-## Samples
+- **Path:** The path of the current object within the object creation scenario.
+
+- **Error:** The current error, if any, encountered during object creation.
+
+- **make(config, options):** Creates an object from a configuration with specific options. The available options are:
+  - `fieldName?: string`
+  - `**preferredType**?: ClassType`
+  - `skipTypeCheck?: boolean`
+  - `optional?: boolean`
+  - `defaultValue?: any`
+
+- **resolveConfig(config):** Resolves the configuration by applying templates and references, resulting in the full configuration.
 
 ## Conclusion & contribution
 
-To begin with, we need to understand there terms:
+**json-make-ts** empowers developers with a versatile toolset for transforming JSON configurations into JavaScript objects. With comprehensive support for data validation, customizable object construction, and the flexibility of the `MakeRepository` and `MakeContext` classes, the library offers a seamless and efficient approach to handling diverse data structures. Explore the rich features and customization options to enhance your development workflow and ensure robust data integrity 🚀 🛡️.
 
-- A maker: is just a factory function, receiving a json-configuration and returning the ouput object. However, the difference is on the first argument, which is a MakeContext object allowing us to generate nested field without reimplementing the making logic.
-- MakeRepository: where we store all makers
-- MakeContext: a runtime context when creating an object
-
-Let's check an example:
-Example:
-```typescript
-const repo = new MakerRepository() // an empty repo
-
-// add some makers for user and blogspot
-repo.add('User', (ctx, config) => ({
-	username: config.username,
-	email: config.email
-}))
-
-repo.add('BlogPost', (ctx, config) => ({
-	title: ctx.title,
-	content: ctx.content,
-	author: ctx.make(config.author)
-}))
-
-// Then we can use the repo to create a js-object from the json:
-const blog = repo.newContext().make({
-    "$$type": "BlogPost",
-    "title": "New Blog Post",
-    "content": "This is the content of the blog post",
-    "author": {
-        "$$type": "User",
-        "username": "jane_doe",
-        "email": "jane@example.com"
-    }
-})
-```
-
-Explaination:
-- In the `BlogPost` maker, we use the context to building the `author` field, which must be a `User` as specified in the options by `preferredType` field
-- In the input json, we define the type of `BlogPost` and `User` in `$$type` field, this is a key-word field to determine the output type
-  
-So, what's powerful with this lib.
-Firstly, it supports fully type-checking. Let's revisit the example above:
-- what if we want to make sure the username & email to be string and not empty, using type-validation:
-```typescript
-repo.add('User', (ctx, config) => ({
-	username: ctx.make(config.username, { preferredType: String }),
-	email: ctx.make(config.username, { preferredType: String })
-}))
-```
-
-- Secondly, it's fully compatible with js class type:
-```typescript
-class User {
-    constructor(public username: string, public email: string) {}
-}
-
-repo.add(User.name, (ctx, config) => new User(
-    ctx.make(config.username, { preferredType: String },
-    ctx.make(config.email, { preferredType: String }
-))))
-
-repo.add('BlogPost', (ctx, config) => ({
-	title: ctx.make(config.title, { preferredType: String }),
-	content: ctx.make(config.content, { preferredType: String }),
-	author: ctx.make(config.author, { preferedType: User }) // <-- it will fail if the config `author` field not returning a User instance
-}))
-```
+We welcome and encourage contributions from the community to enhance the capabilities and usability of **json-make-ts**, whether it's addressing issues, adding new features, or improving documentation. Feel free to explore the codebase, open issues, submit pull requests, and join us in shaping the future of **json-make-ts**.
